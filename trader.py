@@ -214,8 +214,8 @@ class Trader:
         elif pos < 0:
             buy_px += min(1, int(pos_ratio * 2))  # Better buy to reduce short
 
-        # Quote size: 2 when neutral, 1 when biased
-        quote_size = 1 if abs(pos) > 15 else 2
+        # Quote size: 4 when neutral, 1 when biased
+        quote_size = 1 if abs(pos) > 20 else 4
 
         # Quote respecting limits
         if self.buy_capacity(product, pos) > 0:
