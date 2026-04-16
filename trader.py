@@ -9,6 +9,21 @@ LIMIT = {
     "INTARIAN_PEPPER_ROOT": 80,
 }
 
+PRODUCT_CONFIG = {
+    "ASH_COATED_OSMIUM": {
+        "neutral_quote_size": 10,
+        "biased_quote_size": 2,
+        "inventory_threshold": 20,
+        "skew_factor": 2,
+    },
+    "INTARIAN_PEPPER_ROOT": {
+        "neutral_quote_size": 8,
+        "biased_quote_size": 2,
+        "inventory_threshold": 15,
+        "skew_factor": 2,
+    },
+}
+
 class Trader:
     def __init__(self):
         # Price history for regression models
@@ -203,6 +218,8 @@ class Trader:
         if best_bid is None:
             return orders
 
+        config = PRODUCT_CONFIG[product]
+
         # Base prices inside the spread
         buy_px = best_bid + 1
         sell_px = best_ask - 1
@@ -210,12 +227,16 @@ class Trader:
         # Inventory adjustment: scale skew with position ratio
         pos_ratio = abs(pos) / LIMIT[product]
         if pos > 0:
-            sell_px -= min(1, int(pos_ratio * 2))  # Better sell to reduce long
+            sell_px -= min(1, int(pos_ratio * config["skew_factor"]))  # Better sell to reduce long
         elif pos < 0:
-            buy_px += min(1, int(pos_ratio * 2))  # Better buy to reduce short
+            buy_px += min(1, int(pos_ratio * config["skew_factor"]))  # Better buy to reduce short
 
-        # Quote size: 4 when neutral, 1 when biased
-        quote_size = 1 if abs(pos) > 20 else 4
+        # Quote size is now tuned separately for each product.
+        quote_size = (
+            config["biased_quote_size"]
+            if abs(pos) > config["inventory_threshold"]
+            else config["neutral_quote_size"]
+        )
 
         # Quote respecting limits
         if self.buy_capacity(product, pos) > 0:
